@@ -1,5 +1,12 @@
 # Script and code snippets
 
+Content :
+
+- Singularity containers recipes
+- Metagenomic co-assembly pre-processing
+- MAG gene prediction
+- Mapping public metagenomes
+
 ## Singularity containers recipes
 
 To build a container, use the following command
