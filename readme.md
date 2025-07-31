@@ -41,8 +41,10 @@ the Singularity `augustus_gmove_genemark.def` file to built the image.
 
 Reference of tools used below:
 
-- [Anvi'o v8](https://github.com/merenlab/anvio)
+- [Anvi'o v8](https://github.com/merenlab/anvio) => Install it with _Conda_
+  as all required tools are installed in the same environment
 - [Seqtk](https://github.com/lh3/seqtk/)
+- [Metabat2](https://bitbucket.org/berkeleylab/metabat/src/master/)
 
 The process described bellow was performed on all co-assemblies
 
@@ -149,7 +151,7 @@ organisms for which the protein were downloaded manualy :
 - _MMETSP-METDB_00388_
 - _MMETSP-metdb_00357_ (no protein prediction)
 - _MMETSP-METDB_00415_
-- _MMETSP-METDB_\00015\_
+- _MMETSP-METDB_00015_
 
 It is important to know that:
 
