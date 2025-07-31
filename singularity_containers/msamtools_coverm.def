@@ -1,0 +1,67 @@
+Bootstrap: library
+From: ubuntu:20.04
+
+# This contains the fastest version of MMseqs2, when CPU support the AVX2
+# technology
+
+%environment
+    export PATH=/tools/minimap2-2.24_x64-linux:$PATH
+    export PATH=/tools/msamtools-1.1.0:$PATH
+    export PATH=/tools/coverm:$PATH
+
+%post
+    apt-get -y update
+    apt-get -y install \
+       apt-transport-https \
+       build-essential \
+       ca-certificates \
+       dirmngr \
+       lsb-release \
+       software-properties-common
+
+    add-apt-repository main
+    add-apt-repository universe
+    add-apt-repository restricted
+    add-apt-repository multiverse
+
+    apt-get -y install \
+        bzip2 \
+        cmake \
+        curl \
+        git \
+        libargtable2-dev\
+        libbz2-dev \
+        libglib2.0-0 \
+        samtools \
+        wget \
+        zlib1g-dev
+
+    apt-get clean
+
+    ## Minimap2
+    mkdir /tools && cd /tools
+    wget https://github.com/lh3/minimap2/releases/download/v2.24/minimap2-2.24_x64-linux.tar.bz2
+    tar -jxf minimap2-2.24_x64-linux.tar.bz2
+    rm /tools/minimap2-2.24_x64-linux.tar.bz2
+
+    ## Rust
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+    ## mstamtools
+    cd /tools
+    wget https://github.com/arumugamlab/msamtools/releases/download/1.1.0/msamtools-1.1.0.tar.gz
+    tar xfz msamtools-1.1.0.tar.gz
+    cd msamtools-1.1.0
+    ./configure
+    make
+
+    ## coverM - precomputed binary
+    cd /tools
+    wget https://github.com/wwood/CoverM/releases/download/v0.6.1/coverm-x86_64-unknown-linux-musl-0.6.1.tar.gz
+    tar -zxf coverm-x86_64-unknown-linux-musl-0.6.1.tar.gz
+    mv coverm-x86_64-unknown-linux-musl-0.6.1 coverm
+    rm *.tar.gz
+
+    ## To mount volumes
+    mkdir /data
+

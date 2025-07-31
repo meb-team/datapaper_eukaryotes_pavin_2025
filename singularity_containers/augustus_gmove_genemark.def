@@ -1,0 +1,119 @@
+Bootstrap: library
+From: ubuntu:20.04
+
+%files
+    # Copy the GeneMark scripts and key from the disk into the image
+    gm_key_64.gz /tools/gm_key_64.gz
+    gmes_linux_64_4.tar.gz /tools/gmes_linux_64_4.tar.gz
+
+%post
+	# Set timezone in tzdata
+	export DEBIAN_FRONTEND="noninteractive"
+	export DEBCONF_NONINTERACTIVE_SEEN=true
+	export TZ="Europe/Paris"
+
+    # Directories for the mounting point and tool
+    mkdir /data
+    mkdir /tools
+
+    # Updates
+    apt-get -y update
+    apt-get install -y build-essential
+
+    apt-get -y install \
+        autoconf \
+        automake \
+        bzip2 \
+        ca-certificates \
+        cdbfasta \
+        cmake \
+        curl \
+        diamond-aligner \
+        gcc \
+        git \
+        libbamtools-dev \
+        libbz2-dev \
+        libboost-all-dev \
+        libboost-iostreams-dev \
+        libcurl4-gnutls-dev \
+        libdbd-mysql-perl \
+        libfile-which-perl \
+        libgsl-dev \
+        libhts-dev \
+        liblpsolve55-dev \
+        liblzma-dev \
+        libmysql++-dev \
+        libncurses5-dev \
+        libparallel-forkmanager-perl \
+        libsqlite3-dev \
+        libssl-dev \
+        libsuitesparse-dev \
+        libyaml-perl \
+        locales \
+        lsb-release \
+        make \
+        perl \
+        python3-pip \
+        samtools \
+        seqtk \
+        wget \
+        zlib1g-dev
+
+    apt-get install -y --no-install-recommends \
+        python3-biopython
+
+    apt-get clean
+
+    # Augustus
+    cd /tools
+    git clone https://github.com/Gaius-Augustus/Augustus.git
+    cd Augustus
+    git checkout tags/v3.5.0
+    make augustus
+    make auxprogs
+    make install
+    cd /
+    rm -rf /tools/Augustus
+
+    # Gmove
+    cd /tools
+    git clone https://github.com/institut-de-genomique/Gmove.git
+    cd Gmove
+    make
+
+    # Miniprot
+    cd /tools
+    git clone https://github.com/lh3/miniprot
+    cd miniprot
+    make
+
+    locale-gen en_GB.UTF-8
+    # export LANGUAGE=en_GB.UTF-8
+    # export LANG=en_GB.UTF-8
+    # export LC_ALL=en_GB.UTF-8
+
+    cd /tools
+    tar -zxf gmes_linux_64_4.tar.gz 
+
+    # Install Perl libraries with update of cpan itself
+    export PERL_MM_USE_DEFAULT=1
+
+    cpan CPAN
+    cpan Hash::Merge
+    cpan Math::Utils
+    cpan MCE::Mutex
+
+    # Unpack the key and move it as "~/.gm_key"
+    gunzip -k gm_key_64.gz
+    cp gm_key_64.gz ~/.gm_key
+
+%environment
+    export PATH=/tools/Gmove:$PATH
+    export PATH=/tools/miniprot:$PATH
+    export PATH=/opt/augustus-3.4.0/scripts:$PATH
+    export LANGUAGE=en_GB.UTF-8
+    export LANG=en_GB.UTF-8
+    export LC_ALL=en_GB.UTF-8
+    export PATH=/tools/gmes_linux_64_4:$PATH
+    export PATH=/tools/gmes_linux_64_4/ProtHint/bin:$PATH
+    export PATH=/tools/gmes_linux_64_4/ProtHint/dependencies:$PATH

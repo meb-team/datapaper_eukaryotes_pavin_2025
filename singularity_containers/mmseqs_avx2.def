@@ -1,0 +1,46 @@
+Bootstrap: library
+From: ubuntu:20.04
+
+# This contains the fastest version of MMseqs2, when CPU support the AVX2
+# technology
+
+%environment
+    export PATH=/tools/mmseqs/bin:$PATH
+
+%post
+    apt-get -y update
+    apt-get -y install \
+       apt-transport-https \
+       build-essential \
+       ca-certificates \
+       dirmngr \
+       lsb-release \
+       software-properties-common
+
+    add-apt-repository main
+    add-apt-repository universe
+    add-apt-repository restricted
+    add-apt-repository multiverse
+
+    apt-get -y install \
+        bzip2 \
+        cmake \
+        curl \
+        git \
+        libbz2-dev \
+        libglib2.0-0 \
+        wget
+
+    apt-get clean
+
+    ## MMseqs2
+    ##### Because  not all nodes support AVX2 on HPC2!!
+    mkdir /tools && cd /tools
+    wget https://mmseqs.com/latest/mmseqs-linux-avx2.tar.gz
+    tar -xzf mmseqs-linux-avx2.tar.gz
+
+    ## To mount volumes
+    mkdir /data
+
+    ## Clean
+    rm /tools/mmseqs-linux-avx2.tar.gz
