@@ -31,7 +31,7 @@ All recipes, "_.def_" files, are present in the directory
 This tool requires a license file. It is free to get one but it is so anoying...
 
 1. visit [http://exon.gatech.edu](http://exon.gatech.edu/genemark/license_download.cgi)
-2. SELECT "_GeneMark-ES/ET/EP+_", and "_ LINUX 64 kernel 3.10 - 5_"
+2. SELECT "_GeneMark-ES/ET/EP+_", and "_LINUX 64 kernel 3.10 - 5_"
 3. fill the form at the bottom of the page. Tips, you can use a random name,
    affiliation and a disposable e-mail address
 
