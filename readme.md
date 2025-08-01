@@ -6,6 +6,7 @@ Content :
 - Metagenomic co-assembly pre-processing
 - MAG gene prediction
 - Mapping public metagenomes
+- SAG assembly cleaning
 
 ## Singularity containers recipes
 
@@ -46,7 +47,10 @@ Reference of tools used below:
 - [Seqtk](https://github.com/lh3/seqtk/)
 - [Metabat2](https://bitbucket.org/berkeleylab/metabat/src/master/)
 
-The process described bellow was performed on all co-assemblies
+The scripts cited in this section are available in the directory
+`assembly_binning_refinement/`.
+
+The process described bellow describes the steps performed on one co-assemblies:
 
 ```bash
 CPUS=8 # a number of CPU to run steps that uses multi-threading
@@ -79,9 +83,7 @@ bwa index assembly.2500.fa.gz
 ```
 
 An example of script that was used for this step. It was written to run on a HPC
-system controlled by _SLURM_ :
-
-`assembly_binning_refinement/backmapping_example.sbatch`
+system controlled by _SLURM_ : `backmapping_example.sbatch`
 
 Then after the backmapping of each samples on the assembly, _anvi'o_ has to
 "profile" each sample and then merge these profiles. Let's assume you put all
@@ -108,7 +110,9 @@ anvi-merge -c $ctg -S MyAssemby -o merged_profile \
 #rm -r single_profiles/*
 ```
 
-Everything is ready to run the binning. _Metabat2_ must be installed on your machine :
+Everything is ready to run the binning. Just a precision, as _anvi'o_ does not
+advocate for a binning tool, you have to install _Metabat2_ by yourself (it is
+available in the _Conda's_ channel _BioConda_ ) :
 
 ```bash
 # This is a wrapper for Matabat2
@@ -120,10 +124,11 @@ anvi-estimate-genome-completeness -c $ctg -p merged_profile/PROFILE.db \
     -C METABAT2 -o binning_metabat2.txt
 ```
 
-The files above gives a summary of each bin, and also estimate the to which
-domain it belongs. This is results is based on single copy core genes sets searched
-earlier. To refine an interesting bin, via the _anvi'o_ interactive interface,
-use
+The files above gives a summary of each bin, and estimates to which domain the
+bin belongs to. This results is based on single copy core genes sets searched
+earlier (`anvi-run-hmms`). Let's assume you are interested in the bin
+_METABAT\_\_152_, to refine and/or visualise it via the _anvi'o_ interactive
+interface, use the following command:
 
 ```bash
 # here we want to visualise the bin "METABAT__152"
@@ -139,12 +144,14 @@ read the this [tutorial about `anvi-refine`](https://merenlab.org/2015/05/11/anv
 This requires two steps. First search protein hints from the public databases to
 help the gene prediction tools, and then in a second time run the gene prediction.
 
+Scripts mentionned in this section are present in the directory `mag_gene_prediction`.
+
 ### Identify proteins from close organisms, in the databases
 
 #### Get the data from [METdb](https://metdb.sb-roscoff.fr/)
 
 The data are structured by organisms and seems hard to extract alone. The script
-`mag_gene_prediction/download_metdb.sh` will do the job, except for the following
+`download_metdb.sh` will do the job, except for the following
 organisms for which the protein were downloaded manualy :
 
 - _Fabrice-METDB_00194_
@@ -187,14 +194,14 @@ mmseqs concatdbs database/METdbDB_h uniref90DB_h \
 
 Second step, identify candidate protein that could serve as protein hint.
 
-All steps are described in the script `mag_gene_prediction/identify_candidate_proteins.sbatch`
+All steps are described in the script `identify_candidate_proteins.sbatch`
 
 This script returns a fasta file with proteins that will serve as hints for the
 gene prediction
 
 #### Gene prediction : _Augustus_ and _GeneMark_
 
-Run the script `mag_gene_prediction/run_single_MAG_gene_prediction.sh`.
+Run the script `run_single_MAG_gene_prediction.sh`.
 The Singularity image `augustus_gmove_genemark.sif` must be in the same directory
 as the script! This script get the GeneMark license key from the Singularity
 container and copy it in your home directory as `$HOME/.gm_key` if it is not
@@ -207,12 +214,14 @@ All results are stored in the directory `gene_call-<NameofTheMAG>`.
 
 ## Mapping public metagenomes
 
+The script mentionned in this section are present in the directory
+`mapping_public_metagenomes/`.
+
 ### The mapping
 
-Example of script, `mapping_public_metagenomes/mapping_public_metagenome.sbatch`.
-It was designed to run on a HPC cluster with the SLURM scheduler, more precisely
-with a job array. It takes as input a file with a list of SRA run identifiers,
-one per line.
+Example of script, `mapping_public_metagenome.sbatch`. It was designed to run on
+a HPC cluster with the SLURM scheduler, more precisely with a job array. It
+takes as input a file with a list of SRA run identifiers, one per line.
 The script requires a _Conda_ environment called _fastp_, which contains the tool
 [fastp](https://github.com/OpenGene/fastp/), and the Singularity container
 `msamtools_coverm.sif` (_cf the Singularity container section_).
@@ -255,3 +264,36 @@ Outputs two files :
 This is an example script. It requires a table with the number of reads mapped
 par MAG per metagenome, the MAG taxonomy, the MAG detection per metagenome,
 and a metadata table of the metagenomes.
+
+## SAG assembly cleaning
+
+This section presents the work done to clean contaminant from SAG assembly. Scripts
+metionned bellow are available in the directory `single_cell_amplified_genome/`.
+
+The _Shell_ script bellow uses [Seqtk](https://github.com/lh3/seqtk/) and
+[SeqKit](https://github.com/shenwei356/seqkit), make sure you have access to
+them. The _Python_ script requires the [ETE toolkit](https://etetoolkit.org/)
+package. To install it in a fresh _Conda_ environment called "_ete3_", use
+the command
+
+```bash
+conda create -n ete3 python=3
+conda activate ete3
+conda install -c etetoolkit ete3 ete_toolchain
+ete3 build check
+```
+
+This part was done in 3 steps:
+
+- First a _BLASTN_ of the contigs _vs_ the _NT_ database, using parameters
+  `-evalue 1e-3 -outfmt "6 std staxid`. It is important to have this `staxid`
+  (_subject taxonomy ID_) in the _BLASTN_ output
+- Second, run the _Python_ script `parse_blastn_taxonomyID.py` as follow
+  to update the _ETE toolkit_ taxonomy database
+
+```bash
+python parse_blastn_taxonomyID.py --update
+```
+
+- Third, run the script `script_blast_to_taxo.sh`. There are two positionnal
+  arguments, the _BLASTN_ results and a sample name
