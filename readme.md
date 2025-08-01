@@ -297,3 +297,7 @@ python parse_blastn_taxonomyID.py --update
 
 - Third, run the script `script_blast_to_taxo.sh`. There are two positionnal
   arguments, the _BLASTN_ results and a sample name
+
+The _BASH_ script calls the _Python_ script, and then sort the contigs according
+to their affiliation as _Bacteria_, _Archaea_, _Eukaryota_ or _other_. There is
+also a step to identify Human contamination.
