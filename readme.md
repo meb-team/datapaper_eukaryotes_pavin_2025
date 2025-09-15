@@ -1,3 +1,22 @@
+# Context
+
+This repository contains scripts and code snippets related to the project _MICROSTORE_
+which aimed at better understanding the micro-eukarayotes from a fresh-water lake,
+the lake Pavin in France.  
+Sampling was conducted a 4 dates in 2018 (April, June, September and November),
+in both the oxic and permanently anoxic layer of the lake (9 m and 80 m). Samples
+were split according to two size fraction : 0.2-10 µm and 10-50 µm.  
+Several types of data were generated from these samples:
+
+- Metabarcoding 18S rDNA regions V4 and v9
+- Metatranscriptomics of poly-A mRNA
+- Metagenomics
+- Single-cell Amplified Genomes
+
+This repository focuses of the _Metagenomics_ and _Single-cell Amplified Genomes_.
+Script related to the metabarcoding and metatranscriptomics parts are available
+in our repository [MICROSTORE_MetaT-MetaB_Monjot_2023](https://github.com/meb-team/MICROSTORE_MetaT-MetaB_Monjot_2023)
+
 # Script and code snippets
 
 Content :
@@ -24,7 +43,6 @@ All recipes, "_.def_" files, are present in the directory
 - `mmseqs.def` : latest version of MMseqs, for CPUs that do not support _avx2_
   instructions
 - `augustus_gmove_genemark.def` : Augustus and GeneMark, **requires extra steps, see bellow**
--
 
 ### Add GeneMark in the dedicated container
 
@@ -35,8 +53,8 @@ This tool requires a license file. It is free to get one but it is so anoying...
 3. fill the form at the bottom of the page. Tips, you can use a random name,
    affiliation and a disposable e-mail address
 
-Make sure you have files `gm_key_64.gz` and `gmes_linux_64_4.tar.gz` next to
-the Singularity `augustus_gmove_genemark.def` file to built the image.
+Make sure you have files `gm_key_64.gz` and `gmes_linux_64_4.tar.gz` in the same
+directory as the Singularity `augustus_gmove_genemark.def` file to built the image.
 
 ## Metagenomic co-assembly pre-processing
 
@@ -47,43 +65,50 @@ Reference of tools used below:
 - [Seqtk](https://github.com/lh3/seqtk/)
 - [Metabat2](https://bitbucket.org/berkeleylab/metabat/src/master/)
 
-The scripts cited in this section are available in the directory
-`assembly_binning_refinement/`.
-
-The process described bellow describes the steps performed on one co-assemblies:
+Let's start by generating a contigs database for _anvi'o_ with the commands
+shown in the code-block bellow. Briefly, these lines take a metagenomic assembly
+and removes contigs smaller than 2.5 kb. It is important to provide a _Fasta_ file
+**not gzipped**. Then a command generate the contigs database, this steps also
+run a gene prediction with _Prodigal_. The command `anvi-run-hmms` search for
+genes from 3 sets of single-copy core genes (Bacteria, Archaea and Eukaryote)
+present in the sequences:
 
 ```bash
 CPUS=8 # a number of CPU to run steps that uses multi-threading
-ASM=assembly.fa.gz # Your metagenomic co-assembly here, MUST ENDs by ".fa.gz"
+ASM=assembly.fa # Your metagenomic co-assembly here, MUST ENDs by ".fa"
 
-# Drop contigs lower thant 2.5 kb
-seqtk seq -L 2500 $ASM > ${ASM//.fa.gz}.2500.fa
-gzip -k ${ASM//.fa.gz}.2500.fa  # keep original file for the next step
+# Clean the Fasta : rename contigs and drop small those smaller than 2.5 kb
+# The report file is a correspondence between the old and new contigs names
+anvi-script-reformat-fasta -o ${ASM//.fa}.2500.fa --simplify-names -l 2500 \
+  --prefix ASM01 --report-file ${ASM//.fa}.2500.report.tsv $ASM
 
-# Prepare t(he contig database
+# Prepare the contig database
 mkdir contigs_db
+ctg=contigs_db/${ASM//.fa}.2500.db
 
-ctg=contigs_db/${ASM//.fa.gz}.2500.db
+anvi-gen-contigs-database -f ${ASM//.fa}.2500.fa \
+    -T $CPUS -n ${ASM//.fa}.2500 -o $ctg
 
-anvi-gen-contigs-database -f ${ASM//.fa.gz}.2500.fa \
-    -T 4 -n ${ASM//.fa.gz}.2500 -o $ctg
-
-rm ${ASM//.fa.gz}.2500.fa # This was was only used to generate anvi'o contigs db
-
-# Search single copy core genes sets for bacteria, archaea and eukaryotes
+# Search single copy core genes sets for Bacteria, Archaea and Eukaryotes
 anvi-run-hmms -c $ctg -I Bacteria_71,Protista_83,Archaea_76 -T $CPUS
+
+# Clean the filtered fasta file. It was only used to generate anvi'o contigs db
+# and the sequences are all in the contigs db
+rm ${ASM//.fa}.2500.fa
 ```
 
 Then the backmapping, _i.e._ mapping of the samples that were co-assembled back
-on the assembly.
+on the assembly. It is a process with several steps. The first consists in generating
+the index for `bwa`:
 
 ```bash
 ## Prepare the index of the assembly
 bwa index assembly.2500.fa.gz
 ```
 
-An example of script that was used for this step. It was written to run on a HPC
-system controlled by _SLURM_ : `backmapping_example.sbatch`
+All remaining sub-steps for this work are described in the
+`assembly_binning_refinement/backmapping_example.sbatch`. This example of script
+was used for this step. It was written to run on a HPC system controlled by _SLURM_.
 
 Then after the backmapping of each samples on the assembly, _anvi'o_ has to
 "profile" each sample and then merge these profiles. Let's assume you put all
