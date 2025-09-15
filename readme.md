@@ -17,6 +17,15 @@ This repository focuses of the _Metagenomics_ and _Single-cell Amplified Genomes
 Script related to the metabarcoding and metatranscriptomics parts are available
 in our repository [MICROSTORE_MetaT-MetaB_Monjot_2023](https://github.com/meb-team/MICROSTORE_MetaT-MetaB_Monjot_2023)
 
+# Data availability
+
+All the sequencing reads have been deposited under the umbrella _BioProject_
+[PRJEB61527](https://www.ebi.ac.uk/ena/browser/view/PRJEB61527).
+
+Other processed data were deposited on the Zenodo archive:
+[10.5281/zenodo.16738299](https://doi.org/10.5281/zenodo.16738299)
+(_this archive will be publicly accessible just before the submission of the article_)
+
 # Script and code snippets
 
 Content :
